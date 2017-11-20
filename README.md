@@ -1,0 +1,1 @@
+Implementation based on https://www.oreilly.com/learning/perform-sentiment-analysis-with-lstms-using-tensorflow
