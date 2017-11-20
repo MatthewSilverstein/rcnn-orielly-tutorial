@@ -5,11 +5,11 @@ import re
 import tensorflow as tf
 import datetime
 
-wordListPath = 'wordsList.npy'
-wordVectorsPath = 'wordVectors.npy'
-positiveFilesPath = 'positiveReviews/'
-negativeFilesPath = 'negativeReviews/'
-preComputedIdsMatrixPath = 'idsMatrix.npy'
+wordListPath = 'resources/wordsList.npy'
+wordVectorsPath = 'resources/wordVectors.npy'
+positiveFilesPath = 'resources/positiveReviews/'
+negativeFilesPath = 'resources/negativeReviews/'
+preComputedIdsMatrixPath = 'resources/idsMatrix.npy'
 
 strip_special_chars = re.compile("[^A-Za-z0-9 ]+")
 def cleanSentences(string):
