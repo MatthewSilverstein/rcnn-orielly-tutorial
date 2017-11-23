@@ -4,54 +4,12 @@ from os.path import isfile, join
 import re
 import tensorflow as tf
 import datetime
+from random import randint
+from data import read_data
 
 wordListPath = 'resources/wordsList.npy'
 wordVectorsPath = 'resources/wordVectors.npy'
-positiveFilesPath = 'resources/positiveReviews/'
-negativeFilesPath = 'resources/negativeReviews/'
-preComputedIdsMatrixPath = 'resources/idsMatrix.npy'
 
-strip_special_chars = re.compile("[^A-Za-z0-9 ]+")
-def cleanSentences(string):
-	string = string.lower().replace("<br />", " ")
-	return re.sub(strip_special_chars, "", string.lower())
-
-def computeIdsMatrix():
-	ids = np.zeros((numFiles, maxSeqLength), dtype='int32')
-	fileCounter = 0
-	for pf in positiveFiles:
-		with open(pf, "r") as f:
-			indexCounter = 0
-			line=f.readline()
-			cleanedLine = cleanSentences(line)
-			split = cleanedLine.split()
-			for word in split:
-				try:
-					ids[fileCounter][indexCounter] = wordsList.index(word)
-				except ValueError:
-					ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
-				indexCounter = indexCounter + 1
-				if indexCounter >= maxSeqLength:
-					break
-			fileCounter = fileCounter + 1 
-	for nf in negativeFiles:
-		with open(nf, "r") as f:
-			indexCounter = 0
-			line=f.readline()
-			cleanedLine = cleanSentences(line)
-			split = cleanedLine.split()
-			for word in split:
-				try:
-					ids[fileCounter][indexCounter] = wordsList.index(word)
-				except ValueError:
-					ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
-				indexCounter = indexCounter + 1
-				if indexCounter >= maxSeqLength:
-					break
-			fileCounter = fileCounter + 1 
-	np.save(preComputedIdsMatrixPath, ids)
-
-from random import randint
 
 def getTrainBatch():
     labels = []
@@ -78,48 +36,10 @@ def getTestBatch():
         arr[i] = ids[num-1:num]
     return arr, labels
 
-wordsList = np.load(wordListPath)
-print('Loaded the word list!')
-wordsList = wordsList.tolist() #Originally loaded as numpy array
-wordsList = [word.decode('UTF-8') for word in wordsList] #Encode words as UTF-8
-wordVectors = np.load(wordVectorsPath)
-print ('Loaded the word vectors!')
-
-print(len(wordsList))
-print(wordVectors.shape)
-
-positiveFiles = [positiveFilesPath + f for f in listdir(positiveFilesPath) if isfile(join(positiveFilesPath, f))]
-negativeFiles = [negativeFilesPath + f for f in listdir(negativeFilesPath) if isfile(join(negativeFilesPath, f))]
-numWords = []
-for pf in positiveFiles:
-    with open(pf, "r", encoding='utf-8') as f:
-        line=f.readline()
-        counter = len(line.split())
-        numWords.append(counter)       
-print('Positive files finished')
-
-for nf in negativeFiles:
-    with open(nf, "r", encoding='utf-8') as f:
-        line=f.readline()
-        counter = len(line.split())
-        numWords.append(counter)  
-print('Negative files finished')
-
-numFiles = len(numWords)
-print('The total number of files is', numFiles)
-print('The total number of words in the files is', sum(numWords))
-print('The average number of words in the files is', sum(numWords)/len(numWords))
 
 maxSeqLength = 250
 numDimensions = 300
 
-# Computing the idsMatrix is expensive.
-if not isfile(preComputedIdsMatrixPath):
-	print('No precomputed idsMatrixFound')
-	computeIdsMatrix()
-
-ids = np.load(preComputedIdsMatrixPath)
-print('Loaded precomputed idsMatrix')
 
 
 batchSize = 24
