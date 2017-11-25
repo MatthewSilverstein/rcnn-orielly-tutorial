@@ -1,15 +1,9 @@
 import numpy as np
-from os import listdir
 from os.path import isfile, join
-import re
 import tensorflow as tf
 import datetime
 from random import randint
 from data import read_data
-
-wordListPath = 'resources/wordsList.npy'
-wordVectorsPath = 'resources/wordVectors.npy'
-
 
 def getTrainBatch():
     labels = []
@@ -21,7 +15,7 @@ def getTrainBatch():
         else:
             num = randint(13499,24999)
             labels.append([0,1])
-        arr[i] = ids[num-1:num]
+        arr[i] = x_image[num-1:num]
     return arr, labels
 
 def getTestBatch():
@@ -33,14 +27,8 @@ def getTestBatch():
             labels.append([1,0])
         else:
             labels.append([0,1])
-        arr[i] = ids[num-1:num]
+        arr[i] = x_image[num-1:num]
     return arr, labels
-
-
-maxSeqLength = 250
-numDimensions = 300
-
-
 
 batchSize = 24
 lstmUnits = 64
@@ -48,6 +36,8 @@ numClasses = 2
 iterations = 100000
 
 tf.reset_default_graph()
+
+x_image, y_true, wordsList, wordVectors, maxSeqLength, numDimensions = read_data()
 
 labels = tf.placeholder(tf.float32, [batchSize, numClasses])
 input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength])

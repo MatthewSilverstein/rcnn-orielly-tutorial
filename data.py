@@ -1,11 +1,14 @@
 from os.path import isfile, join
+from os import listdir
+import re
+import numpy as np
 
 wordListPath = 'resources/wordsList.npy'
 wordVectorsPath = 'resources/wordVectors.npy'
 positiveFilesPath = 'resources/positiveReviews/'
 negativeFilesPath = 'resources/negativeReviews/'
 preComputedXImagePath = 'resources/x_image.npy'
-preComputerYLabelPath = 'resources/y_label.npy'
+preComputedYLabelPath = 'resources/y_label.npy'
 strip_special_chars = re.compile("[^A-Za-z0-9 ]+")
 positiveFiles = [positiveFilesPath + f for f in listdir(positiveFilesPath) if isfile(join(positiveFilesPath, f))]
 negativeFiles = [negativeFilesPath + f for f in listdir(negativeFilesPath) if isfile(join(negativeFilesPath, f))]
@@ -21,18 +24,17 @@ maxSeqLength = 250
 numDimensions = 300
 
 def read_data():
-
-	preAnalysis()
+	# preAnalysis() # uncomment to do analysis on the input data
 	# Computing the x_image is expensive.
 	if not isfile(preComputedXImagePath):
 		print('No precomputed x_image found')
 		computeXImage()
-	if not isfile(preComputerYLabelPath):
+	if not isfile(preComputedYLabelPath):
 		print('No precomputed y_label found')
-		computeYImage()
+		computeYLabel()
 	x_image = np.load(preComputedXImagePath)
-	y_label = np.load(preComputerYLabelPath)
-	return x_image, y_label
+	y_label = np.load(preComputedYLabelPath)
+	return x_image, y_label, wordsList, wordVectors, maxSeqLength, numDimensions
 
 def cleanSentences(string):
 	string = string.lower().replace("<br />", " ")
@@ -79,7 +81,7 @@ def computeYLabel():
 	for f in positiveFiles:
 		y_label[count][0] = 1
 		count += 1
-	np.save(preComputerYLabelPath, y_label)
+	np.save(preComputedYLabelPath, y_label)
 
 def preAnalysis():
 	print(len(wordsList))
