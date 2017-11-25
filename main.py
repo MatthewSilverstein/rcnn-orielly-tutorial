@@ -6,29 +6,10 @@ from random import randint
 from data import read_data
 
 def getTrainBatch():
-    labels = []
-    arr = np.zeros([batchSize, maxSeqLength])
-    for i in range(batchSize):
-        if (i % 2 == 0): 
-            num = randint(1,11499)
-            labels.append([1,0])
-        else:
-            num = randint(13499,24999)
-            labels.append([0,1])
-        arr[i] = x_image[num-1:num]
-    return arr, labels
+	return dataset.train.next_batch(batchSize)
 
 def getTestBatch():
-    labels = []
-    arr = np.zeros([batchSize, maxSeqLength])
-    for i in range(batchSize):
-        num = randint(11499,13499)
-        if (num <= 12499):
-            labels.append([1,0])
-        else:
-            labels.append([0,1])
-        arr[i] = x_image[num-1:num]
-    return arr, labels
+	return dataset.test.next_batch(batchSize)
 
 batchSize = 24
 lstmUnits = 64
@@ -37,7 +18,7 @@ iterations = 100000
 
 tf.reset_default_graph()
 
-x_image, y_true, wordsList, wordVectors, maxSeqLength, numDimensions = read_data()
+dataset, wordsList, wordVectors, maxSeqLength, numDimensions = read_data()
 
 labels = tf.placeholder(tf.float32, [batchSize, numClasses])
 input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
