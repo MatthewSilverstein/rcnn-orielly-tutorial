@@ -3,7 +3,7 @@ from os.path import isfile, join
 import tensorflow as tf
 import datetime
 from random import randint
-from data import read_data
+import review_data
 
 def getTrainBatch():
 	return dataset.train.next_batch(batchSize)
@@ -11,14 +11,27 @@ def getTrainBatch():
 def getTestBatch():
 	return dataset.test.next_batch(batchSize)
 
+wordListPath = 'resources/wordsList.npy'
+wordVectorsPath = 'resources/wordVectors.npy'
+wordsList = np.load(wordListPath)
+wordsList = wordsList.tolist() #Originally loaded as numpy array
+wordsList = [word.decode('UTF-8') for word in wordsList] #Encode words as UTF-8
+wordVectors = np.load(wordVectorsPath)
+
+
 batchSize = 24
 lstmUnits = 64
 numClasses = 2
 iterations = 100000
+maxSeqLength = 250
+numDimensions = 300
+
 
 tf.reset_default_graph()
 
-dataset, wordsList, wordVectors, maxSeqLength, numDimensions = read_data()
+review_processor = review_data.ReviewProcessor(wordsList, wordVectors, max_seq_length=maxSeqLength, num_dimensions=numDimensions)
+review_processor.process_data()
+dataset = review_processor.data
 
 labels = tf.placeholder(tf.float32, [batchSize, numClasses])
 input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
