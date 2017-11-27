@@ -4,80 +4,39 @@ import tensorflow as tf
 import datetime
 from random import randint
 import review_data
+from trainer import Trainer
 
-def getTrainBatch():
-	return dataset.train.next_batch(batchSize)
+def main():
+	word_list_path = 'resources/wordsList.npy'
+	word_vectors_path = 'resources/wordVectors.npy'
+	words_list = np.load(word_list_path)
+	words_list = words_list.tolist() #Originally loaded as numpy array
+	words_list = [word.decode('UTF-8') for word in words_list] #Encode words as UTF-8
+	word_vectors = np.load(word_vectors_path)
 
-def getTestBatch():
-	return dataset.test.next_batch(batchSize)
+	batch_size = 24
+	lstm_units = 64
+	num_classes = 2
+	iterations = 100000
+	max_seq_length = 250
+	num_dimensions = 300
+	output_keep_prob = 0.75
 
-wordListPath = 'resources/wordsList.npy'
-wordVectorsPath = 'resources/wordVectors.npy'
-wordsList = np.load(wordListPath)
-wordsList = wordsList.tolist() #Originally loaded as numpy array
-wordsList = [word.decode('UTF-8') for word in wordsList] #Encode words as UTF-8
-wordVectors = np.load(wordVectorsPath)
+	review_processor = review_data.ReviewProcessor(words_list, word_vectors, max_seq_length=max_seq_length, num_dimensions=num_dimensions)
+	review_processor.process_data()
+	datasets = review_processor.data
 
-
-batchSize = 24
-lstmUnits = 64
-numClasses = 2
-iterations = 100000
-maxSeqLength = 250
-numDimensions = 300
-
-
-tf.reset_default_graph()
-
-review_processor = review_data.ReviewProcessor(wordsList, wordVectors, max_seq_length=maxSeqLength, num_dimensions=numDimensions)
-review_processor.process_data()
-dataset = review_processor.data
-
-labels = tf.placeholder(tf.float32, [batchSize, numClasses])
-input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
-
-data = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]), dtype=tf.float32)
-data = tf.nn.embedding_lookup(wordVectors, input_data)
-
-lstmCell = tf.contrib.rnn.BasicLSTMCell(lstmUnits)
-lstmCell = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
-value, _ = tf.nn.dynamic_rnn(lstmCell, data, dtype=tf.float32)
-
-weight = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]))
-bias = tf.Variable(tf.constant(0.1, shape=[numClasses]))
-value = tf.transpose(value, [1, 0, 2])
-last = tf.gather(value, int(value.get_shape()[0]) - 1)
-prediction = (tf.matmul(last, weight) + bias)
-
-correctPred = tf.equal(tf.argmax(prediction, 1), tf.argmax(labels, 1))
-accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
-
-loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=labels))
-optimizer = tf.train.AdamOptimizer().minimize(loss)
+	trainer = Trainer(
+		datasets, 
+		word_vectors,
+		batch_size=24,
+		lstm_units=lstm_units,
+		num_dimensions=300,
+		max_seq_length=250,
+		output_keep_prob=0.75)
+	trainer.train(iterations)
 
 
+if __name__ == "__main__":
+	main()
 
-
-sess = tf.InteractiveSession()
-saver = tf.train.Saver()
-sess.run(tf.global_variables_initializer())
-
-tf.summary.scalar('Loss', loss)
-tf.summary.scalar('Accuracy', accuracy)
-merged = tf.summary.merge_all()
-logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
-writer = tf.summary.FileWriter(logdir, sess.graph)
-
-for i in range(iterations):
-#Next Batch of reviews
-	nextBatch, nextBatchLabels = getTrainBatch();
-	sess.run(optimizer, {input_data: nextBatch, labels: nextBatchLabels})
-	#Write summary to Tensorboard
-	if (i % 50 == 0):
-		summary = sess.run(merged, {input_data: nextBatch, labels: nextBatchLabels})
-		writer.add_summary(summary, i)
-	#Save the network every 10,000 training iterations
-	if (i % 10000 == 0 and i != 0):
-		save_path = saver.save(sess, "models/pretrained_lstm.ckpt", global_step=i)
-		print("saved to %s" % save_path)
-writer.close()
